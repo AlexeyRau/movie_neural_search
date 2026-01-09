@@ -1,9 +1,14 @@
-import pandas as pd
 import kagglehub
 import os
+import pandas as pd
+import numpy as np
+from sentence_transformers import SentenceTransformer, util
 
 print("Скачиваем датасет TMDB...")
 path = kagglehub.dataset_download("tmdb/tmdb-movie-metadata")
+
+print("Путь:", path)
+print("Файлы:", os.listdir(path))
 
 movies_path = os.path.join(path, "tmdb_5000_movies.csv")
 df = pd.read_csv(movies_path)
@@ -19,5 +24,14 @@ df_simple['release_date'] = pd.to_datetime(df_simple['release_date'], errors='co
 df_simple['year'] = df_simple['release_date'].dt.year.fillna(0).astype(int)
 
 df_simple.reset_index(drop=True, inplace=True)
+
 df_simple.to_csv('movies_simple.csv', index=False)
-print(f"Сохранено {len(df_simple)} фильмов")
+print(f"Сохранено {len(df_simple)} фильмов.")
+
+texts = df_simple['overview'].tolist()
+titles = df_simple['title'].tolist()
+
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+embeddings = model.encode(texts, show_progress_bar=True)
+np.save('movie_embeddings.npy', embeddings)
